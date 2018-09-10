@@ -3286,6 +3286,12 @@ static int sec_ts_remove(struct i2c_client *client)
 			"%s: Error occured while unregistering fb_notifier.\n", __func__);
 #endif
 
+#if defined(CONFIG_FB)
+	if (fb_unregister_client(&ts->fb_notif))
+		input_info(true, &ts->client->dev,
+			"%s: Error occured while unregistering fb_notifier.\n", __func__);
+#endif
+
 	sec_ts_ioctl_remove(ts);
 
 	cancel_delayed_work_sync(&ts->work_read_info);
