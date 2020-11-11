@@ -634,6 +634,54 @@ out:
 	return ret;
 }
 
+/* START_OF_KNOX_NPA */
+/** The function sets the domain name associated with the socket. **/
+static int sock_set_domain_name(struct sock *sk, char __user *optval, int optlen)
+{
+	int ret = -EADDRNOTAVAIL;
+	char domain[DOMAIN_NAME_LEN_NAP];
+
+	ret = -EINVAL;
+	if (optlen < 0)
+		goto out;
+
+	if (optlen > DOMAIN_NAME_LEN_NAP - 1)
+		optlen = DOMAIN_NAME_LEN_NAP - 1;
+
+	memset(domain, 0, sizeof(domain));
+
+	ret = -EFAULT;
+	if (copy_from_user(domain, optval, optlen))
+		goto out;
+	memcpy(sk->domain_name, domain, sizeof(sk->domain_name) - 1);
+	ret = 0;
+
+out:
+	return ret;
+}
+
+/** The function sets the uid associated with the dns socket. **/
+static int sock_set_dns_uid(struct sock *sk, char __user *optval, int optlen)
+{
+    int ret = -EADDRNOTAVAIL;
+
+    if (optlen < 0)
+		goto out;
+
+    if (optlen == sizeof(uid_t)) {
+		uid_t dns_uid;
+		ret = -EFAULT;
+		if (copy_from_user(&dns_uid, optval, sizeof(dns_uid)))
+			goto out;
+		memcpy(&sk->knox_dns_uid, &dns_uid, sizeof(sk->knox_dns_uid));
+		ret = 0;
+    }
+
+out:
+	return ret;
+}
+
+
 static inline void sock_valbool_flag(struct sock *sk, int bit, int valbool)
 {
 	if (valbool)
@@ -681,6 +729,12 @@ int sock_setsockopt(struct socket *sock, int level, int optname,
 
 	if (optname == SO_BINDTODEVICE)
 		return sock_setbindtodevice(sk, optval, optlen);
+
+	/* START_OF_KNOX_NPA */
+	if (optname == SO_SET_DOMAIN_NAME)
+		return sock_set_domain_name(sk, optval, optlen);
+	if (optname == SO_SET_DNS_UID)
+		return sock_set_dns_uid(sk, optval, optlen);
 
 	if (optlen < sizeof(int))
 		return -EINVAL;
